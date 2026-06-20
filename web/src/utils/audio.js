@@ -1,22 +1,9 @@
 // Audio playback pipeline.
 //
-// Primary path is an AudioWorklet (off the main thread, so heavy canvas
-// drawing can't starve playback). The worklet reports "alive" on its first
-// render callback; if that confirmation doesn't arrive (worklet failed to
-// load, was blocked, or silently isn't running) we transparently switch to a
-// ScriptProcessorNode running the same ring-buffer logic. Either way audio
-// plays, and any hard failure is surfaced via onError.
-
-// loopbackHost reports whether the page is served from a local loopback name.
-function loopbackHost() {
-  const h = location.hostname;
-  return h === 'localhost' || h === '127.0.0.1' || h === '[::1]';
-}
-
-// workletSupported is false on LAN/http origins where AudioWorklet is blocked.
-function workletSupported(ctx) {
-  return !!(window.isSecureContext && loopbackHost() && ctx.audioWorklet);
-}
+// Browsers require AudioContext.resume() inside the user-gesture call stack.
+// unlockFromGesture() must run synchronously on click/touch/keydown — before
+// any await — and must wire up a ScriptProcessor immediately so playback works
+// on every hostname (localhost, LAN IP, HTTPS reverse proxy).
 
 export class AudioPlayer {
   constructor(rate = 48000) {
@@ -26,11 +13,10 @@ export class AudioPlayer {
     this.analyser = null;
     this._levelBuf = null;
 
-    this.node = null; // AudioWorkletNode when the worklet path is active
-    this.sp = null;   // ScriptProcessorNode for the fallback path
-    this.mode = null; // 'worklet' | 'script'
+    this.node = null;
+    this.sp = null;
+    this.mode = null;
 
-    // Main-thread ring buffer (fallback path only).
     this._ring = null;
     this._cap = 0;
     this._r = 0;
@@ -39,113 +25,118 @@ export class AudioPlayer {
     this._primed = false;
     this._prebuffer = 0;
 
-    this._aliveSeen = false;
-    this._aliveCb = null;
-    this._verified = false;
+    this._upgradePromise = null;
 
     this._playing = false;
     this._volume = 0.8;
-    this._starting = null;
-    this.onError = null; // optional callback(message)
+    this.onError = null;
   }
 
   get playing() {
     return this._playing;
   }
 
-  // start is idempotent and safe to call from any user gesture.
+  // unlockFromGesture creates/resumes AudioContext and attaches ScriptProcessor
+  // synchronously inside a click/touch/keydown handler.
+  unlockFromGesture() {
+    if (!this.ctx) {
+      try {
+        this.ctx = new AudioContext({ sampleRate: this.rate });
+      } catch {
+        this.ctx = new AudioContext();
+      }
+      this.gain = this.ctx.createGain();
+      this.gain.gain.value = this._volume;
+      this.analyser = this.ctx.createAnalyser();
+      this.analyser.fftSize = 1024;
+      this.gain.connect(this.analyser).connect(this.ctx.destination);
+      this._levelBuf = new Float32Array(this.analyser.fftSize);
+    }
+
+    if (this.ctx.state === 'suspended') {
+      void this.ctx.resume();
+    }
+
+    // Safari / strict autoplay: play a silent buffer in the gesture stack.
+    try {
+      const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+      const ping = this.ctx.createBufferSource();
+      ping.buffer = buf;
+      ping.connect(this.ctx.destination);
+      ping.start(0);
+      ping.stop(this.ctx.currentTime + 0.001);
+    } catch { /* optional */ }
+
+    if (!this.sp && !this.node) {
+      this._attachScriptProcessor(this.ctx);
+      this.mode = 'script';
+    }
+  }
+
   async start() {
     try {
-      if (!this.ctx) {
-        if (!this._starting) this._starting = this._build();
-        await this._starting;
-      }
-      if (this.ctx.state === 'suspended') await this.ctx.resume();
+      this.unlockFromGesture();
 
-      // Once the context is running, confirm the worklet actually renders.
-      if (this.mode === 'worklet' && !this._verified) {
-        this._verified = true;
-        const alive = await this._waitAlive(1200);
-        if (!alive) {
-          console.warn('AudioWorklet not rendering, switching to ScriptProcessor');
-          this._switchToFallback();
-        }
+      if (this.ctx.state === 'suspended') {
+        await this.ctx.resume();
+      }
+
+      // Upgrade to AudioWorklet in the background (secure contexts only).
+      // ScriptProcessor already plays; worklet reduces main-thread jitter.
+      if (window.isSecureContext && this.ctx.audioWorklet && !this.node) {
+        void this._upgradeToWorklet();
       }
 
       this.reset();
       this._playing = true;
     } catch (err) {
       console.error('audio start failed', err);
-      this.onError?.(String(err && err.message ? err.message : err));
+      this._playing = false;
+      this.onError?.(String(err?.message ?? err));
       throw err;
     }
   }
 
-  async _build() {
-    const ctx = new AudioContext({ sampleRate: this.rate });
-    const gain = ctx.createGain();
-    gain.gain.value = this._volume;
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 1024;
-    // gain -> analyser -> destination; the source (worklet or SP) feeds gain.
-    gain.connect(analyser).connect(ctx.destination);
-
-    this.ctx = ctx;
-    this.gain = gain;
-    this.analyser = analyser;
-    this._levelBuf = new Float32Array(analyser.fftSize);
-
-    if (workletSupported(ctx)) {
-      try {
-        await ctx.audioWorklet.addModule(new URL('/worklet.js', location.origin).href);
-        const node = new AudioWorkletNode(ctx, 'pcm-player', {
-          numberOfInputs: 0,
-          numberOfOutputs: 1,
-          outputChannelCount: [1],
-        });
-        node.port.onmessage = (e) => {
-          if (e.data && e.data.type === 'alive') {
-            this._aliveSeen = true;
-            this._aliveCb?.();
-          }
-        };
-        node.connect(gain);
-        this.node = node;
-        this.mode = 'worklet';
-        return;
-      } catch (err) {
-        console.warn('AudioWorklet unavailable, using ScriptProcessor', err);
-      }
-    } else if (!loopbackHost()) {
-      console.info('Non-loopback HTTP origin: using ScriptProcessor for LAN access');
+  async _upgradeToWorklet() {
+    if (this._upgradePromise) return this._upgradePromise;
+    this._upgradePromise = this._doUpgradeToWorklet();
+    try {
+      await this._upgradePromise;
+    } catch (err) {
+      this._upgradePromise = null;
+      throw err;
     }
-
-    this._buildScriptProcessor(ctx).connect(gain);
-    this.mode = 'script';
   }
 
-  _waitAlive(timeoutMs) {
-    if (this._aliveSeen) return Promise.resolve(true);
-    return new Promise((resolve) => {
-      let done = false;
-      const finish = (v) => {
-        if (done) return;
-        done = true;
-        this._aliveCb = null;
-        resolve(v);
-      };
-      this._aliveCb = () => finish(true);
-      setTimeout(() => finish(false), timeoutMs);
+  async _doUpgradeToWorklet() {
+    const ctx = this.ctx;
+    if (!ctx?.audioWorklet || this.node) return;
+
+    await ctx.audioWorklet.addModule(new URL('/worklet.js', location.origin).href);
+    const node = new AudioWorkletNode(ctx, 'pcm-player', {
+      numberOfInputs: 0,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
     });
+    node.connect(this.gain);
+
+    const sp = this.sp;
+    if (sp) {
+      try { sp.disconnect(); } catch { /* ignore */ }
+      sp.onaudioprocess = null;
+      this.sp = null;
+    }
+
+    this.node = node;
+    this.mode = 'worklet';
   }
 
-  _switchToFallback() {
-    if (this.node) {
-      try { this.node.disconnect(); } catch { /* ignore */ }
-      this.node = null;
+  _attachScriptProcessor(ctx) {
+    if (this.sp) {
+      try { this.sp.disconnect(); } catch { /* ignore */ }
+      this.sp.onaudioprocess = null;
     }
-    this._buildScriptProcessor(this.ctx).connect(this.gain);
-    this.mode = 'script';
+    this._buildScriptProcessor(ctx).connect(this.gain);
   }
 
   _buildScriptProcessor(ctx) {
@@ -179,8 +170,6 @@ export class AudioPlayer {
     return sp;
   }
 
-  // getLevelDb returns the current output RMS level in dBFS, or -Infinity when
-  // silent / not yet started.
   getLevelDb() {
     if (!this.analyser || !this._playing) return -Infinity;
     this.analyser.getFloatTimeDomainData(this._levelBuf);
@@ -202,11 +191,10 @@ export class AudioPlayer {
     }
   }
 
-  // push hands a Float32Array of PCM to the active backend.
   push(pcm) {
     if (!this._playing) return;
     if (this.node) {
-      this.node.port.postMessage({ pcm }, [pcm.buffer]);
+      this.node.port.postMessage({ pcm: new Float32Array(pcm) });
       return;
     }
     if (!this._ring) return;

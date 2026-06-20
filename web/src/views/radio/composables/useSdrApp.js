@@ -151,11 +151,18 @@ export function provideSdrApp(options = {}) {
   }
 
   async function ensurePlaying() {
+    audio.unlockFromGesture();
     if (audio.playing) return;
     playDisabled.value = true;
     stopDisabled.value = false;
-    playing.value = true;
-    try { await audio.start(); } catch { /* onError handled it */ }
+    try {
+      await audio.start();
+      playing.value = true;
+    } catch {
+      playDisabled.value = false;
+      stopDisabled.value = true;
+      playing.value = false;
+    }
   }
 
   audio.onError = (msg) => {
@@ -256,7 +263,8 @@ export function provideSdrApp(options = {}) {
   }
 
   function onPlay() {
-    ensurePlaying();
+    audio.unlockFromGesture();
+    void ensurePlaying();
     conn?.send({ cmd: 'tune', freq: clampFreq(state.tuneFreq) });
   }
 
@@ -327,7 +335,8 @@ export function provideSdrApp(options = {}) {
   function onCanvasDown(clientX, canvas) {
     dragCanvas = canvas;
     state.dragging = true;
-    ensurePlaying();
+    audio.unlockFromGesture();
+    void ensurePlaying();
     const cx = canvasX(clientX, canvas);
     dragMode = bwEdgeUnder(cx) ? 'bw' : 'tune';
     if (dragMode === 'bw') {
@@ -386,6 +395,9 @@ export function provideSdrApp(options = {}) {
   }
 
   onMounted(() => {
+    if (new URLSearchParams(location.search).has('audiodebug')) {
+      window.__sdrAudioRef = audio;
+    }
     startConnection();
     window.addEventListener('mousemove', onGlobalMove);
     window.addEventListener('mouseup', onCanvasUp);
