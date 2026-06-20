@@ -78,6 +78,7 @@ jobs:
           path: web/dist/
 
       - uses: actions/setup-go@v5
+        if: runner.os != 'Windows'
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -99,8 +100,10 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
+            mingw-w64-x86_64-go
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-libusb
             mingw-w64-x86_64-rtl-sdr
 
       - name: Build (Unix)
@@ -118,20 +121,18 @@ jobs:
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: msys2 {0}
         env:
           CGO_ENABLED: 1
           GOOS: windows
           GOARCH: amd64
-          CC: gcc
-          PKG_CONFIG: pkg-config
         run: |
-          $env:Path = "C:\msys64\mingw64\bin;" + $env:Path
-          $env:PKG_CONFIG_PATH = "C:\msys64\mingw64\lib\pkgconfig"
-          go build `
-            -trimpath `
-            -ldflags="-s -w" `
-            -o "${{ env.APP_NAME }}-${{ matrix.name }}.exe" `
+          pkg-config --exists librtlsdr
+          go version
+          go build \
+            -trimpath \
+            -ldflags="-s -w" \
+            -o "${{ env.APP_NAME }}-${{ matrix.name }}.exe" \
             ./cmd/websdr
 
       - name: Package (Unix)
