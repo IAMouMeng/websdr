@@ -153,12 +153,59 @@ CGO_ENABLED=1 go build -o websdr.exe ./cmd/websdr
 
 </details>
 
-浏览器打开 **http://localhost:8080**，插入 RTL-SDR 后点击播放即可。
+### 运行时依赖
+
+编译只需 `-dev` 包；**直接运行** `websdr` 或 Release 二进制时，系统里还必须有动态库（`.so` / `.dylib` / `.dll`），否则会报 `error while loading shared libraries: librtlsdr.so.0` 等错误。
+
+<details>
+<summary><b>Linux</b> 运行时库</summary>
+
+Debian / Ubuntu：
+
+```bash
+sudo apt update
+sudo apt install -y librtlsdr0 libusb-1.0-0
+```
+
+Fedora / RHEL：
+
+```bash
+sudo dnf install -y rtl-sdr libusb1
+```
+
+验证：
+
+```bash
+ldd ./websdr | grep -E 'rtlsdr|usb'
+```
+
+</details>
+
+<details>
+<summary><b>macOS</b></summary>
+
+```bash
+brew install librtlsdr
+```
+
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
+
+GitHub **Release** 里的 `websdr-windows-amd64.zip` 已包含 `websdr.exe` 及所需 DLL，解压后直接运行即可（仍需 [Zadig WinUSB 驱动](https://zadig.akeo.ie/)）。
+
+自行编译时，MSYS2 环境需将 `mingw64\bin` 加入 PATH，或手动复制 DLL 到 exe 同目录。
+
+</details>
+
+浏览器打开 **http://127.0.0.1:8080**（本机）或 **http://&lt;本机IP&gt;:8080**（局域网，默认监听 `0.0.0.0`），插入 RTL-SDR 后点击播放即可。
 
 **命令行参数**
 
 | 参数 | 默认 | 说明 |
 |------|------|------|
+| `-host` | 0.0.0.0 | HTTP 监听地址 |
 | `-port` | 8080 | HTTP 端口 |
 | `-freq` | 100000000 | 初始中心频率 (Hz) |
 | `-gain` | 30 | 增益 (dB) |

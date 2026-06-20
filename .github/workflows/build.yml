@@ -143,10 +143,31 @@ jobs:
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          app="${{ env.APP_NAME }}-${{ matrix.name }}"
+          pkgdir="dist/${app}"
+          mkdir -p "$pkgdir"
+          cp "${app}.exe" "$pkgdir/"
+
+          copy_mingw_dlls() {
+            ldd "$1" | awk '/\/mingw64\// {print $1}' | while read -r dll; do
+              cp -f "/mingw64/bin/${dll}" "$pkgdir/" 2>/dev/null || true
+            done
+          }
+
+          copy_mingw_dlls "${app}.exe"
+          copy_mingw_dlls /mingw64/bin/librtlsdr.dll
+          copy_mingw_dlls /mingw64/bin/libusb-1.0.dll
+          echo "Windows release bundle:"
+          ls -la "$pkgdir"
+
+      - name: Zip (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path "${{ env.APP_NAME }}-${{ matrix.name }}.exe" `
-            -DestinationPath "${{ env.APP_NAME }}-${{ matrix.name }}.zip"
+          $app = "${{ env.APP_NAME }}-${{ matrix.name }}"
+          Compress-Archive -Path "dist/$app/*" -DestinationPath "$app.zip" -Force
 
       - name: Upload release asset
         if: github.event_name != 'pull_request'

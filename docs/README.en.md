@@ -153,12 +153,59 @@ CGO_ENABLED=1 go build -o websdr.exe ./cmd/websdr
 
 </details>
 
-Open **http://localhost:8080** in your browser, plug in the RTL-SDR, and hit Play.
+### Runtime dependencies
+
+Build requires `-dev` packages; to **run** `websdr` or a Release binary you also need shared libraries (`.so` / `.dylib` / `.dll`). Otherwise you may see errors like `error while loading shared libraries: librtlsdr.so.0`.
+
+<details>
+<summary><b>Linux</b> runtime libraries</summary>
+
+Debian / Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install -y librtlsdr0 libusb-1.0-0
+```
+
+Fedora / RHEL:
+
+```bash
+sudo dnf install -y rtl-sdr libusb1
+```
+
+Verify:
+
+```bash
+ldd ./websdr | grep -E 'rtlsdr|usb'
+```
+
+</details>
+
+<details>
+<summary><b>macOS</b></summary>
+
+```bash
+brew install librtlsdr
+```
+
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
+
+The GitHub **Release** `websdr-windows-amd64.zip` bundles `websdr.exe` with required DLLs — unzip and run (still needs the [Zadig WinUSB driver](https://zadig.akeo.ie/) for your RTL-SDR).
+
+When building locally, add MSYS2 `mingw64\bin` to PATH or copy DLLs next to the exe.
+
+</details>
+
+Open **http://127.0.0.1:8080** locally or **http://&lt;your-ip&gt;:8080** on the LAN (default bind: `0.0.0.0`). Plug in the RTL-SDR and hit Play.
 
 **CLI flags**
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `-host` | 0.0.0.0 | HTTP listen address |
 | `-port` | 8080 | HTTP port |
 | `-freq` | 100000000 | Initial center frequency (Hz) |
 | `-gain` | 30 | Gain (dB) |
