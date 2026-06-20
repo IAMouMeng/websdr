@@ -14,11 +14,11 @@
 <table align="center" border="0" cellspacing="16" cellpadding="0">
   <tr>
     <td align="center"><img src="images/radio.png" width="420" alt=""></td>
-    <td align="center"><img src="images/device.png" width="420" alt=""></td>
+    <td align="center"><img src="images/satellite.png" width="420" alt=""></td>
   </tr>
   <tr>
-    <td align="center"><img src="images/satellite.png" width="420" alt=""></td>
     <td align="center"><img src="images/ads-b.png" width="420" alt=""></td>
+    <td align="center"><img src="images/protocol.png" width="420" alt=""></td>
   </tr>
 </table>
 
@@ -32,7 +32,7 @@ WebSDR is a **Go + RTL-SDR + Vue 3** web-based software-defined radio. Plug in a
 
 ## Supported Hardware
 
-WebSDR uses [librtlsdr](https://github.com/osmocom/rtl-sdr) to drive **RTL2832U + R820T/R820T2** USB receivers. **The author's personal device for development and testing is the [RTL-SDR Blog V3](https://www.rtl-sdr.com/)** (see device photo above); screenshots and feature validation in this project are based on that model.
+WebSDR uses [librtlsdr](https://github.com/osmocom/rtl-sdr) to drive **RTL2832U + R820T/R820T2** USB receivers. **The author's personal device for development and testing is the [RTL-SDR Blog V3](https://www.rtl-sdr.com/)**; screenshots and feature validation in this project are based on that model.
 
 Other compatible dongles include:
 

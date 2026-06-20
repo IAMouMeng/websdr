@@ -14,11 +14,11 @@
 <table align="center" border="0" cellspacing="16" cellpadding="0">
   <tr>
     <td align="center"><img src="docs/images/radio.png" width="420" alt=""></td>
-    <td align="center"><img src="docs/images/device.png" width="420" alt=""></td>
+    <td align="center"><img src="docs/images/satellite.png" width="420" alt=""></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/images/satellite.png" width="420" alt=""></td>
     <td align="center"><img src="docs/images/ads-b.png" width="420" alt=""></td>
+    <td align="center"><img src="docs/images/protocol.png" width="420" alt=""></td>
   </tr>
 </table>
 
@@ -32,7 +32,7 @@ WebSDR 是基于 **Go + RTL-SDR + Vue 3** 的 Web 软件定义无线电接收器
 
 ## 推荐设备
 
-本项目通过 [librtlsdr](https://github.com/osmocom/rtl-sdr) 驱动 **RTL2832U + R820T/R820T2** 系列 USB 接收棒。**作者本人使用并实测的设备为 [RTL-SDR Blog V3](https://www.rtl-sdr.com/)**（见上方设备图），README 截图与功能验证均基于该型号开发。
+本项目通过 [librtlsdr](https://github.com/osmocom/rtl-sdr) 驱动 **RTL2832U + R820T/R820T2** 系列 USB 接收棒。**作者本人使用并实测的设备为 [RTL-SDR Blog V3](https://www.rtl-sdr.com/)**，README 截图与功能验证均基于该型号开发。
 
 常见可用设备还包括：
 
