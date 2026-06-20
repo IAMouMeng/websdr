@@ -13,6 +13,7 @@ permissions:
 env:
   GO_VERSION: "1.22"
   APP_NAME: websdr
+  CGO_CFLAGS: -Wno-pointer-sign
 
 jobs:
   build-web:
@@ -23,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
 
@@ -61,11 +62,6 @@ jobs:
             runner: macos-latest
             goos: darwin
             goarch: arm64
-            ext: ""
-          - name: darwin-amd64
-            runner: macos-13
-            goos: darwin
-            goarch: amd64
             ext: ""
           - name: windows-amd64
             runner: windows-latest
@@ -122,16 +118,20 @@ jobs:
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
-        shell: msys2 {0}
+        shell: pwsh
         env:
           CGO_ENABLED: 1
           GOOS: windows
           GOARCH: amd64
+          CC: gcc
+          PKG_CONFIG: pkg-config
         run: |
-          go build \
-            -trimpath \
-            -ldflags="-s -w" \
-            -o "${{ env.APP_NAME }}-${{ matrix.name }}.exe" \
+          $env:Path = "C:\msys64\mingw64\bin;" + $env:Path
+          $env:PKG_CONFIG_PATH = "C:\msys64\mingw64\lib\pkgconfig"
+          go build `
+            -trimpath `
+            -ldflags="-s -w" `
+            -o "${{ env.APP_NAME }}-${{ matrix.name }}.exe" `
             ./cmd/websdr
 
       - name: Package (Unix)
