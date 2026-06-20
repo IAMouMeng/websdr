@@ -205,7 +205,7 @@ Open **http://127.0.0.1:8080** locally or **http://&lt;your-ip&gt;:8080** on the
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-host` | 0.0.0.0 | HTTP listen address |
+| `-host` | (empty, all interfaces) | Listen address; empty = dual-stack `:port` |
 | `-port` | 8080 | HTTP port |
 | `-freq` | 100000000 | Initial center frequency (Hz) |
 | `-gain` | 30 | Gain (dB) |

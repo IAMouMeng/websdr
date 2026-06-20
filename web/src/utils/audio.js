@@ -7,6 +7,17 @@
 // ScriptProcessorNode running the same ring-buffer logic. Either way audio
 // plays, and any hard failure is surfaced via onError.
 
+// loopbackHost reports whether the page is served from a local loopback name.
+function loopbackHost() {
+  const h = location.hostname;
+  return h === 'localhost' || h === '127.0.0.1' || h === '[::1]';
+}
+
+// workletSupported is false on LAN/http origins where AudioWorklet is blocked.
+function workletSupported(ctx) {
+  return !!(window.isSecureContext && loopbackHost() && ctx.audioWorklet);
+}
+
 export class AudioPlayer {
   constructor(rate = 48000) {
     this.rate = rate;
@@ -84,9 +95,9 @@ export class AudioPlayer {
     this.analyser = analyser;
     this._levelBuf = new Float32Array(analyser.fftSize);
 
-    if (ctx.audioWorklet) {
+    if (workletSupported(ctx)) {
       try {
-        await ctx.audioWorklet.addModule('worklet.js');
+        await ctx.audioWorklet.addModule(new URL('/worklet.js', location.origin).href);
         const node = new AudioWorkletNode(ctx, 'pcm-player', {
           numberOfInputs: 0,
           numberOfOutputs: 1,
@@ -105,6 +116,8 @@ export class AudioPlayer {
       } catch (err) {
         console.warn('AudioWorklet unavailable, using ScriptProcessor', err);
       }
+    } else if (!loopbackHost()) {
+      console.info('Non-loopback HTTP origin: using ScriptProcessor for LAN access');
     }
 
     this._buildScriptProcessor(ctx).connect(gain);

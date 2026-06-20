@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	host := flag.String("host", "0.0.0.0", "HTTP 监听地址")
+  host := flag.String("host", "", "HTTP 监听地址（默认空=全部网卡 IPv4/IPv6 双栈）")
 	port := flag.Int("port", 8080, "HTTP 服务端口")
 	freq := flag.Uint64("freq", 100000000, "初始中心频率 (Hz)")
 	gain := flag.Float64("gain", 30, "增益 (dB)")
@@ -65,7 +65,12 @@ func main() {
 	mux.HandleFunc("/api/satellite/catalog", server.HandleSatelliteCatalog)
 	mux.HandleFunc("/api/satellite/tle", server.HandleSatelliteTLE)
 
-	addr := fmt.Sprintf("%s:%d", *host, *port)
+	var addr string
+	if *host == "" {
+		addr = fmt.Sprintf(":%d", *port)
+	} else {
+		addr = fmt.Sprintf("%s:%d", *host, *port)
+	}
 	log.Printf("WebSDR 已启动: http://127.0.0.1:%d  (监听 %s)", *port, addr)
 	log.Printf("中心频率: %.3f MHz, 采样率: %d Hz", float64(cfg.CenterFreq)/1e6, cfg.SampleRate)
 
