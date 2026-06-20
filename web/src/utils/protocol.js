@@ -4,6 +4,16 @@ export const MSG_SPECTRUM = 0x01;
 export const MSG_AUDIO = 0x02;
 export const MSG_IQ = 0x03;
 
+// wsHost returns the host:port used for the WebSocket URL.
+// localhost resolves to IPv6 (::1) on many systems; IPv4 127.0.0.1 has
+// smoother delivery on macOS, so normalize loopback names to 127.0.0.1.
+export function wsHost() {
+  const h = location.hostname;
+  const port = location.port || (location.protocol === 'https:' ? '443' : '80');
+  if (h === 'localhost' || h === '[::1]') return `127.0.0.1:${port}`;
+  return location.host;
+}
+
 // connect opens a reconnecting WebSocket and dispatches decoded messages to
 // the supplied handlers. Returns { send, close }.
 export function connect(handlers) {
@@ -12,7 +22,7 @@ export function connect(handlers) {
 
   const open = () => {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${proto}//${location.host}/ws`);
+    ws = new WebSocket(`${proto}//${wsHost()}/ws`);
     ws.binaryType = 'arraybuffer';
     ws.onopen = () => handlers.onOpen?.();
     ws.onclose = () => {

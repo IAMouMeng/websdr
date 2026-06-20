@@ -103,9 +103,9 @@ function startServer(tls, listenPort = port) {
 <button id="play">Play</button>
 <pre id="out">idle</pre>
 <script type="module">
-import { AudioPlayer } from '/utils/audio.js';
+import { AudioPlayer, installAudioDebug } from '/utils/audio.js';
 const audio = new AudioPlayer(48000);
-window.__audio = audio;
+installAudioDebug(audio);
 document.getElementById('play').onclick = async () => {
   audio.unlockFromGesture();
   await audio.start();
@@ -254,6 +254,7 @@ async function main() {
     cases.push({ host, path: '/audio-test.html', label: `HTTPS ${host} isolated`, scheme: 'https', listenPort: port });
     cases.push({ host, path: '/radio', label: `HTTPS ${host} /radio`, scheme: 'https', listenPort: port });
     cases.push({ host, path: '/radio', label: `HTTP  ${host} /radio`, scheme: 'http', listenPort: httpPort });
+    cases.push({ host, path: '/radio', label: `HTTPS ${host} /radio (WS before play)`, scheme: 'https', listenPort: port, delayPlay: 2000 });
   }
 
   const results = [];
@@ -307,6 +308,7 @@ async function main() {
     process.stdout.write(`Testing ${c.label} ... `);
     try {
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      if (c.delayPlay) await page.waitForTimeout(c.delayPlay);
       if (c.path === '/radio') {
         await page.waitForSelector('button[title="播放"]', { timeout: 15000 });
         await page.click('button[title="播放"]');
@@ -324,6 +326,7 @@ async function main() {
           ctx: audio.ctx?.state,
           db: audio.getLevelDb(),
           isSecure: window.isSecureContext,
+          stats: typeof window.__sdrAudioStats === 'function' ? window.__sdrAudioStats() : null,
         };
       });
 

@@ -48,15 +48,18 @@ func (c *client) writeLoop() {
 }
 
 type Hub struct {
-	mu      sync.RWMutex
-	clients map[*client]struct{}
-	rx      *receiver.Receiver
+	mu             sync.RWMutex
+	clients        map[*client]struct{}
+	rx             *receiver.Receiver
+	webrtcMu       sync.RWMutex
+	webrtcSessions map[*webRTCSession]struct{}
 }
 
 func NewHub(rx *receiver.Receiver) *Hub {
 	return &Hub{
-		clients: make(map[*client]struct{}),
-		rx:      rx,
+		clients:        make(map[*client]struct{}),
+		rx:             rx,
+		webrtcSessions: make(map[*webRTCSession]struct{}),
 	}
 }
 
@@ -171,6 +174,7 @@ func (h *Hub) runAudioBroadcast(ctx context.Context) {
 				binary.LittleEndian.PutUint16(buf[3+i*2:], uint16(s))
 			}
 			h.broadcast(websocket.BinaryMessage, buf)
+			h.dispatchWebRTC(frame)
 		}
 	}
 }

@@ -1,6 +1,6 @@
 import { inject, provide, reactive, ref, onMounted, onUnmounted } from 'vue';
 import { connect } from '@/utils/protocol.js';
-import { AudioPlayer } from '@/utils/audio.js';
+import { AudioPlayer, installAudioDebug } from '@/utils/audio.js';
 import { Display } from '@/utils/display.js';
 import {
   LS_KEY,
@@ -54,6 +54,14 @@ export function provideSdrApp(options = {}) {
   const initialized = ref(false);
 
   const audio = new AudioPlayer(48000);
+
+  function audioDebugExtra() {
+    return {
+      volume: volume.value,
+      tuneFreq: state.tuneFreq,
+      mode: mode.value,
+    };
+  }
   let display = null;
   let conn = null;
   let tuneTimer = null;
@@ -95,8 +103,8 @@ export function provideSdrApp(options = {}) {
     if (saved.nrLevel != null) nrLevel.value = saved.nrLevel;
     if (saved.volume != null) {
       volume.value = saved.volume;
-      audio.setVolume(saved.volume / 100);
     }
+    audio.setVolume(volume.value / 100);
     if (saved.cwPitch != null) cwPitch.value = saved.cwPitch;
     if (saved.specMin != null) state.specMin = saved.specMin;
     if (saved.specMax != null) state.specMax = saved.specMax;
@@ -152,6 +160,7 @@ export function provideSdrApp(options = {}) {
 
   async function ensurePlaying() {
     audio.unlockFromGesture();
+    audio.setVolume(volume.value / 100);
     if (audio.playing) return;
     playDisabled.value = true;
     stopDisabled.value = false;
@@ -171,6 +180,13 @@ export function provideSdrApp(options = {}) {
     playDisabled.value = false;
     stopDisabled.value = true;
     playing.value = false;
+  };
+
+  audio.onTransportChange = (t) => {
+    if (!playing.value && t === 'none') return;
+    if (t === 'webrtc') statusText.value = '已连接 WebRTC';
+    else if (t === 'ws') statusText.value = '已连接';
+    else if (statusClass.value === 'ok') statusText.value = '已连接';
   };
 
   function applyStatus(msg) {
@@ -264,6 +280,7 @@ export function provideSdrApp(options = {}) {
 
   function onPlay() {
     audio.unlockFromGesture();
+    audio.setVolume(volume.value / 100);
     void ensurePlaying();
     conn?.send({ cmd: 'tune', freq: clampFreq(state.tuneFreq) });
   }
@@ -395,9 +412,8 @@ export function provideSdrApp(options = {}) {
   }
 
   onMounted(() => {
-    if (new URLSearchParams(location.search).has('audiodebug')) {
-      window.__sdrAudioRef = audio;
-    }
+    installAudioDebug(audio, audioDebugExtra);
+    audio.setVolume(volume.value / 100);
     startConnection();
     window.addEventListener('mousemove', onGlobalMove);
     window.addEventListener('mouseup', onCanvasUp);

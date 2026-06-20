@@ -60,6 +60,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.FS(webContent)))
 	mux.HandleFunc("/ws", hub.HandleWS)
+	mux.HandleFunc("/api/webrtc/offer", hub.HandleWebRTCOffer)
 	mux.HandleFunc("/api/meteor/catalog", server.HandleMeteorCatalog)
 	mux.HandleFunc("/api/meteor/tle", server.HandleMeteorTLE)
 	mux.HandleFunc("/api/satellite/catalog", server.HandleSatelliteCatalog)
