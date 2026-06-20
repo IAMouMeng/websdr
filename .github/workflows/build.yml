@@ -149,7 +149,7 @@ jobs:
             -DestinationPath "${{ env.APP_NAME }}-${{ matrix.name }}.zip"
 
       - name: Upload release asset
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.name }}
@@ -159,26 +159,30 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Upload build artifact
-        if: "!startsWith(github.ref, 'refs/tags/v')"
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ matrix.name }}
-          path: |
-            ${{ env.APP_NAME }}-${{ matrix.name }}${{ matrix.ext }}
-            ${{ env.APP_NAME }}-${{ matrix.name }}.tar.gz
-            ${{ env.APP_NAME }}-${{ matrix.name }}.zip
-          if-no-files-found: warn
-          retention-days: 14
-
   release:
     name: Publish GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Compute release metadata
+        id: meta
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "make_latest=true" >> "$GITHUB_OUTPUT"
+          else
+            short="${GITHUB_SHA::7}"
+            echo "tag=build-${short}" >> "$GITHUB_OUTPUT"
+            echo "name=Build ${short}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "make_latest=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
@@ -193,12 +197,13 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.name }}
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
           draft: false
-          prerelease: false
-          make_latest: true
+          prerelease: ${{ steps.meta.outputs.prerelease }}
+          make_latest: ${{ steps.meta.outputs.make_latest }}
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
