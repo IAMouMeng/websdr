@@ -51,6 +51,7 @@ type Hub struct {
 	mu             sync.RWMutex
 	clients        map[*client]struct{}
 	rx             *receiver.Receiver
+	clientVolume   int // last UI volume 0–100; shared across tabs/origins
 	webrtcMu       sync.RWMutex
 	webrtcSessions map[*webRTCSession]struct{}
 }
@@ -65,6 +66,12 @@ func NewHub(rx *receiver.Receiver) *Hub {
 
 func (h *Hub) statusJSON() []byte {
 	cfg := h.rx.Config()
+	h.mu.RLock()
+	vol := h.clientVolume
+	h.mu.RUnlock()
+	if vol <= 0 || vol > 100 {
+		vol = 80
+	}
 	status, _ := json.Marshal(map[string]interface{}{
 		"type":       "status",
 		"centerFreq": cfg.CenterFreq,
@@ -77,6 +84,7 @@ func (h *Hub) statusJSON() []byte {
 		"mode":       cfg.Mode,
 		"nr":         cfg.NR,
 		"nrLevel":    cfg.NRLevel,
+		"volume":     vol,
 		"service":        cfg.Service,
 		"enabled":        h.rx.Enabled(),
 		"directSampling": cfg.DirectSampling,
@@ -240,6 +248,7 @@ type clientCmd struct {
 	MeteorRecPause *bool   `json:"meteorRecordPause"`
 	MeteorRecCh    int     `json:"meteorRecordChannels"`
 	Enabled        *bool   `json:"enabled"`
+	Volume         int     `json:"volume"`
 }
 
 func (h *Hub) HandleWS(w http.ResponseWriter, r *http.Request) {
@@ -293,6 +302,13 @@ func (h *Hub) handleCmd(cmd clientCmd) {
 	case "mode":
 		if cmd.Mode != "" {
 			h.rx.SetMode(receiver.Mode(cmd.Mode))
+			changed = true
+		}
+	case "volume":
+		if cmd.Volume >= 0 && cmd.Volume <= 100 {
+			h.mu.Lock()
+			h.clientVolume = cmd.Volume
+			h.mu.Unlock()
 			changed = true
 		}
 	case "gain":

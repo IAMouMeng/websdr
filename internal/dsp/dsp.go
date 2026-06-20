@@ -101,6 +101,7 @@ func (a *AGC) Process(buf []float32) {
 	const ref float32 = 0.5
 	const decay float32 = 0.99994 // ~0.35s time constant at 48 kHz
 	const maxGain float32 = 40
+	const peakFloor float32 = 1e-6
 	for i, v := range buf {
 		av := v
 		if av < 0 {
@@ -111,12 +112,13 @@ func (a *AGC) Process(buf []float32) {
 		} else {
 			a.peak *= decay
 		}
-		g := float32(1)
-		if a.peak > 1e-4 {
-			g = ref / a.peak
-			if g > maxGain {
-				g = maxGain
-			}
+		peak := a.peak
+		if peak < peakFloor {
+			peak = peakFloor
+		}
+		g := ref / peak
+		if g > maxGain {
+			g = maxGain
 		}
 		out := v * g
 		if out > 1 {

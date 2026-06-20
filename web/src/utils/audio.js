@@ -118,8 +118,14 @@ export class AudioPlayer {
 
     try {
       if (this.ctx.state === 'suspended') await this.ctx.resume();
+      const queued = this._pending;
+      const queuedSamples = this._pendingSamples;
+      this._pending = [];
+      this._pendingSamples = 0;
       await this._ensureOutput();
       this.reset();
+      this._pending = queued;
+      this._pendingSamples = queuedSamples;
       this._flushPending();
     } catch (err) {
       this._playing = false;

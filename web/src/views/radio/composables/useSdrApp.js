@@ -67,6 +67,7 @@ export function provideSdrApp(options = {}) {
   let tuneTimer = null;
   let filterTimer = null;
   let saveTimer = null;
+  let rfDirty = false;
 
   function saveSettings() {
     const data = {
@@ -137,8 +138,10 @@ export function provideSdrApp(options = {}) {
       conn.send({ cmd: 'mode', mode: mode.value });
       conn.send({ cmd: 'sampleRate', sampleRate: state.sampleRate });
       conn.send({ cmd: 'filter', filterBW: state.filterBW });
-      conn.send({ cmd: 'gain', gain: gain.value });
-      conn.send({ cmd: 'agc', agc: agc.value });
+      if (rfDirty) {
+        conn.send({ cmd: 'gain', gain: gain.value });
+        conn.send({ cmd: 'agc', agc: agc.value });
+      }
       conn.send({ cmd: 'nr', nr: nr.value });
       conn.send({ cmd: 'nrlevel', nrLevel: nrLevel.value / 100 });
       conn.send({ cmd: 'cwpitch', cwPitch: cwPitch.value });
@@ -213,9 +216,22 @@ export function provideSdrApp(options = {}) {
         state.tuneFreq = msg.tuneFreq || msg.centerFreq;
       }
       if (msg.sampleRate) state.sampleRate = msg.sampleRate;
+      if (msg.gain != null) gain.value = msg.gain;
+      if (msg.agc != null) agc.value = msg.agc;
+      if (msg.volume != null && msg.volume > 0) {
+        volume.value = msg.volume;
+        audio.setVolume(volume.value / 100);
+      }
+      scheduleSave();
       initialized.value = true;
     } else {
       setCenterFreq(msg.centerFreq);
+      if (msg.gain != null) gain.value = msg.gain;
+      if (msg.agc != null) agc.value = msg.agc;
+      if (msg.volume != null && msg.volume > 0) {
+        volume.value = msg.volume;
+        audio.setVolume(volume.value / 100);
+      }
     }
     if (msg.sampleRate) state.sampleRate = msg.sampleRate;
   }
@@ -259,11 +275,13 @@ export function provideSdrApp(options = {}) {
   }
 
   function onGainInput() {
+    rfDirty = true;
     conn?.send({ cmd: 'gain', gain: gain.value });
     scheduleSave();
   }
 
   function onAgcChange() {
+    rfDirty = true;
     conn?.send({ cmd: 'agc', agc: agc.value });
     scheduleSave();
   }
@@ -280,6 +298,7 @@ export function provideSdrApp(options = {}) {
 
   function onVolumeInput() {
     audio.setVolume(volume.value / 100);
+    conn?.send({ cmd: 'volume', volume: volume.value });
     scheduleSave();
   }
 
