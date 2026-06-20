@@ -147,9 +147,14 @@ export function provideSdrApp(options = {}) {
     }, 150);
   }
 
+  function sendTune() {
+    audio.resetForTune();
+    conn?.send({ cmd: 'tune', freq: clampFreq(state.tuneFreq) });
+  }
+
   function scheduleTune() {
     clearTimeout(tuneTimer);
-    tuneTimer = setTimeout(() => conn?.send({ cmd: 'tune', freq: clampFreq(state.tuneFreq) }), 80);
+    tuneTimer = setTimeout(sendTune, 50);
   }
 
   function setTuneFreq(hz, sendNow = true) {
@@ -282,7 +287,7 @@ export function provideSdrApp(options = {}) {
     audio.unlockFromGesture();
     audio.setVolume(volume.value / 100);
     void ensurePlaying();
-    conn?.send({ cmd: 'tune', freq: clampFreq(state.tuneFreq) });
+    sendTune();
   }
 
   function onStop() {
@@ -375,6 +380,10 @@ export function provideSdrApp(options = {}) {
 
   function onCanvasUp() {
     if (dragMode === 'bw') conn?.send({ cmd: 'filter', filterBW: state.filterBW });
+    else if (dragMode === 'tune') {
+      clearTimeout(tuneTimer);
+      sendTune();
+    }
     state.dragging = false;
     dragCanvas = null;
   }

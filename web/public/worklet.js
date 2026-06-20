@@ -9,7 +9,9 @@ class PCMPlayer extends AudioWorkletProcessor {
     this.r = 0;
     this.w = 0;
     this.n = 0;
-    this.prebuffer = Math.floor(sampleRate * 0.15);
+    this.prebufferNormal = Math.floor(sampleRate * 0.08);
+    this.prebufferFast = Math.floor(sampleRate * 0.03);
+    this.prebuffer = this.prebufferNormal;
     this.primed = false;
     this.underruns = 0;
 
@@ -19,6 +21,7 @@ class PCMPlayer extends AudioWorkletProcessor {
         this.r = this.w = this.n = 0;
         this.primed = false;
         this.underruns = 0;
+        this.prebuffer = d.fast ? this.prebufferFast : this.prebufferNormal;
         return;
       }
       const pcm = d.pcm;

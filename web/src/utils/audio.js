@@ -58,6 +58,8 @@ export class AudioPlayer {
     this._n = 0;
     this._primed = false;
     this._prebuffer = 0;
+    this._prebufferNormal = 0;
+    this._prebufferFast = 0;
 
     this._pending = [];
     this._pendingSamples = 0;
@@ -167,7 +169,9 @@ export class AudioPlayer {
     this._ring = new Float32Array(this._cap);
     this._r = this._w = this._n = 0;
     this._primed = false;
-    this._prebuffer = Math.floor(sr * 0.15);
+    this._prebufferNormal = Math.floor(sr * 0.08);
+    this._prebufferFast = Math.floor(sr * 0.03);
+    this._prebuffer = this._prebufferNormal;
 
     const sp = ctx.createScriptProcessor(2048, 1, 1);
     const silent = ctx.createGain();
@@ -264,13 +268,24 @@ export class AudioPlayer {
     return rms > 1e-7 ? 20 * Math.log10(rms) : -Infinity;
   }
 
-  reset() {
+  reset(opts = {}) {
+    const fast = opts.fast === true;
+    this._pending = [];
+    this._pendingSamples = 0;
     if (this.node) {
-      this.node.port.postMessage({ cmd: 'reset' });
+      this.node.port.postMessage({ cmd: 'reset', fast });
     } else {
       this._r = this._w = this._n = 0;
       this._primed = false;
+      if (this._prebufferNormal) {
+        this._prebuffer = fast ? this._prebufferFast : this._prebufferNormal;
+      }
     }
+  }
+
+  resetForTune() {
+    if (!this._playing) return;
+    this.reset({ fast: true });
   }
 
   push(pcm) {
