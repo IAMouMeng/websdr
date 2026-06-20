@@ -1,0 +1,313 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #000;
+  color: #ccc;
+  display: flex;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+/* 左侧操作面板 */
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-head { padding: 16px 16px 12px; }
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sidebar-head h1 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+.status { font-size: 11px; color: #555; margin-top: 4px; }
+.status.ok { color: #4a4; }
+.status.err { color: #a44; }
+
+.section { padding: 14px 16px; }
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #444;
+  margin-bottom: 10px;
+}
+
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.field > label {
+  display: block;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 5px;
+}
+.radio-group { display: flex; flex-direction: column; gap: 4px; }
+.radio-group.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: #777;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.radio-group label:hover { background: #111; color: #ccc; }
+.radio-group input[type=radio] { margin: 0; accent-color: #fff; flex-shrink: 0; }
+.radio-group label:has(input:checked) { background: #1a1a1a; color: #fff; }
+
+.field input[type=range] { width: 100%; accent-color: #666; cursor: pointer; }
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 4px;
+}
+.field-row span.val { color: #aaa; font-family: monospace; }
+
+select {
+  width: 100%;
+  padding: 6px 8px;
+  background: #111;
+  color: #ccc;
+  border: 1px solid #1d1d1d;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* 带宽数字输入 */
+.num-input { display: flex; align-items: stretch; gap: 4px; }
+.num-input button {
+  width: 28px;
+  border: 1px solid #1d1d1d;
+  background: #111;
+  color: #bbb;
+  font-size: 15px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.num-input button:hover { background: #1c1c1c; color: #fff; }
+.num-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 6px;
+  background: #111;
+  color: #ddd;
+  border: 1px solid #1d1d1d;
+  border-radius: 3px;
+  font: 12px monospace;
+  text-align: right;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #888;
+  cursor: pointer;
+}
+
+.btn-row { display: flex; gap: 8px; }
+.btn-row button {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background: #111;
+  color: #ccc;
+  font-size: 12px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.btn-row button:hover { background: #1a1a1a; }
+.btn-row button:disabled { opacity: 0.3; cursor: default; }
+.btn-row button.primary { background: #fff; color: #000; font-weight: 600; }
+.btn-row button.primary:hover { background: #ddd; }
+.btn-row button.primary:disabled { background: #333; color: #666; }
+
+.hidden { display: none; }
+
+/* 右侧显示区 */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #000; }
+
+/* 顶部信息栏 */
+.topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  background: #080808;
+  border-bottom: 1px solid #181818;
+}
+.topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+/* 频率密码盘 */
+.freq-dial { display: flex; align-items: stretch; gap: 0; user-select: none; }
+.freq-dial .fd {
+  font: 22px/1 "SF Mono", "Menlo", monospace;
+  color: #fff;
+  padding: 4px 2px;
+  min-width: 16px;
+  text-align: center;
+  cursor: ns-resize;
+  border-radius: 3px;
+  position: relative;
+}
+.freq-dial .fd:hover { background: #161616; }
+.freq-dial .fd.lead { color: #444; }
+.freq-dial .fd-sep {
+  font: 22px/1 "SF Mono", "Menlo", monospace;
+  color: #555;
+  padding: 4px 0;
+  align-self: center;
+}
+.freq-dial .fd-unit { font-size: 12px; color: #667; align-self: flex-end; margin-left: 6px; padding-bottom: 6px; }
+.recenter-btn {
+  margin-left: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #9cf;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recenter-btn:hover { background: rgba(102, 204, 255, 0.08); color: #cff; }
+
+.topbar-right { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+.mono { font-family: "SF Mono", "Menlo", monospace; }
+.clocks { font-size: 11px; color: #aaa; line-height: 1.5; text-align: right; }
+.clocks .mono { color: #fff; }
+.vu { display: flex; align-items: center; }
+.vumeter { width: 220px; height: 38px; background: #111; border-radius: 3px; display: block; }
+
+/* 显示区主体：左显示 + 右竖向控制 */
+.display-body { flex: 1; min-height: 0; display: flex; }
+.displays { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.display-spectrum { flex: 1; min-height: 0; position: relative; border-bottom: 1px solid #141414; }
+.display-waterfall { flex: 1; min-height: 0; position: relative; }
+.display-waterfall canvas, .display-spectrum canvas {
+  display: block; width: 100%; height: 100%;
+}
+.spectrum-canvas, .waterfall-canvas { cursor: crosshair; }
+
+.display-waveform {
+  flex: 0 0 64px;
+  min-height: 48px;
+  position: relative;
+  border-top: 1px solid #141414;
+}
+.display-waveform canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: ns-resize;
+}
+
+/* 右侧竖向拖动条 */
+.right-panel {
+  width: 40px;
+  flex-shrink: 0;
+  background: #0a0a0a;
+  border-left: 1px solid #181818;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 4px;
+  gap: 20px;
+}
+.sq-ctl {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  min-height: 0;
+  user-select: none;
+}
+.sq-ctl .sq-label { font-size: 9px; color: #667; letter-spacing: 0.04em; text-align: center; }
+.sq-track {
+  width: 100%;
+  flex: 1;
+  min-height: 48px;
+  background: #111;
+  border: 1px solid #252525;
+  border-radius: 2px;
+  position: relative;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.sq-track .sq-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(102, 204, 255, 0.12);
+  pointer-events: none;
+}
+.sq-track .sq-thumb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: #6cf;
+  border-radius: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+.sq-ctl .sq-val { font: 10px monospace; color: #9ab; flex-shrink: 0; text-align: center; }
+
+/* 传输控制图标 */
+.transport-btns {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn:hover:not(:disabled) { background: rgba(255,255,255,0.06); color: #fff; }
+.icon-btn.primary { color: #cfc; }
+.icon-btn.primary:hover:not(:disabled) { background: rgba(180,255,180,0.08); color: #efe; }
+.icon-btn:disabled { opacity: 0.25; cursor: default; }

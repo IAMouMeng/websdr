@@ -1,0 +1,114 @@
+# ── macOS ──────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ── Windows ────────────────────────────────────────
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# ── Linux ──────────────────────────────────────────
+*~
+.directory
+.Trash-*
+
+# ── Go ─────────────────────────────────────────────
+# 编译产物
+/websdr
+/websdr-*
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+__debug_bin
+__debug_bin*
+
+# 测试与覆盖率
+coverage.out
+coverage.html
+*.coverprofile
+*.prof
+*.pprof
+
+# 依赖与工具缓存
+/vendor/
+/.cache/
+
+# ── Node / 前端 ────────────────────────────────────
+web/node_modules/
+web/dist/
+web/.vite/
+web/.cache/
+web/.eslintcache
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+web/pnpm-debug.log*
+web/.pnpm-debug.log*
+web/.env
+web/.env.*
+!web/.env.example
+
+# ── 本地交叉编译工具链（含本机绝对路径）────────────
+.cross/
+
+# ── IDE / 编辑器 ───────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ── AI / 本地工具配置 ──────────────────────────────
+.claude/
+web/.claude/
+.cursor/
+
+# ── 日志与临时文件 ─────────────────────────────────
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# ── 环境与密钥 ─────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json

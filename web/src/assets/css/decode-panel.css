@@ -1,0 +1,147 @@
+/* Toast-style decode feed on map pages (ADS-B, AIS) — no panel chrome. */
+
+.map-page {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+.notify-stack {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  width: 268px;
+  max-height: calc(100% - 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.notify-status {
+  align-self: flex-end;
+  font-size: 11px;
+  color: #888;
+  pointer-events: none;
+}
+
+.notify-status.ok {
+  color: #6a9f6a;
+}
+
+.notify-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: calc(100% - 36px);
+  pointer-events: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+
+.notify-item {
+  padding: 9px 12px;
+  background: rgba(8, 10, 14, 0.84);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: background 0.12s, transform 0.12s;
+  font-size: 12px;
+  color: #c8d0dc;
+}
+
+.notify-item:hover {
+  background: rgba(14, 18, 26, 0.9);
+  transform: translateX(-2px);
+}
+
+.notify-item.active {
+  background: rgba(18, 24, 34, 0.94);
+}
+
+.notify-item.dim {
+  opacity: 0.52;
+}
+
+.notify-item--hint {
+  cursor: default;
+  color: #5a6577;
+  text-align: center;
+  font-size: 11px;
+}
+
+.notify-item--hint:hover {
+  transform: none;
+  background: rgba(8, 10, 14, 0.84);
+}
+
+.notify-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.notify-title {
+  font-weight: 600;
+  color: #eaf1f8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notify-badge {
+  flex-shrink: 0;
+  color: #9fb3cc;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+.notify-sub {
+  display: flex;
+  gap: 10px;
+  margin-top: 3px;
+  color: #79839a;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.notify-sub .notify-time {
+  margin-left: auto;
+  color: #5a6577;
+}
+
+.notify-pending {
+  color: #a88c4a;
+}
+
+/* Leaflet divIcon markers — each icon must not clip siblings */
+.plane-icon,
+.ship-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Leaflet popups on the dark theme */
+.ac-popup b {
+  color: #ffd54a;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.ac-popup div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ac-popup div span {
+  color: #8a93a8;
+}
